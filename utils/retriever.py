@@ -1,9 +1,22 @@
 import logging
 from typing import List, Optional, Dict, Any
-from langchain.schema import Document
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import LLMChainExtractor
-from langchain.llms.base import LLM
+from langchain_core.documents import Document
+from langchain_core.language_models import BaseLLM as LLM
+
+# Handle import errors for optional compression features
+try:
+    from langchain.retrievers import ContextualCompressionRetriever
+    from langchain.retrievers.document_compressors import LLMChainExtractor
+    COMPRESSION_AVAILABLE = True
+except ImportError:
+    try:
+        from langchain_community.retrievers import ContextualCompressionRetriever
+        from langchain_community.retrievers.document_compressors import LLMChainExtractor
+        COMPRESSION_AVAILABLE = True
+    except ImportError:
+        COMPRESSION_AVAILABLE = False
+        ContextualCompressionRetriever = None
+        LLMChainExtractor = None
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -28,8 +41,8 @@ class AdvancedRetriever:
                 search_kwargs={"k": 10}  # Retrieve more initially for filtering
             )
             
-            # Setup compression retriever if LLM is available
-            if self.llm:
+            # Setup compression retriever if LLM is available and compression is supported
+            if self.llm and COMPRESSION_AVAILABLE and LLMChainExtractor is not None:
                 compressor = LLMChainExtractor.from_llm(self.llm)
                 self.compression_retriever = ContextualCompressionRetriever(
                     base_compressor=compressor,

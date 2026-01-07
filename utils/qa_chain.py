@@ -3,7 +3,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from google import genai
 from google.genai import types
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

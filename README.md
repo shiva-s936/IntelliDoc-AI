@@ -132,7 +132,7 @@ IntelligentDocumentQA/
 ## 🔮 Roadmap
 
 - [ ] Multi-LLM support (OpenAI, Claude, local models)
-- [ ] REST API endpoints
+- [x] REST API endpoints (FastAPI with `/upload`, `/ask`, `/evaluate`)
 - [ ] Advanced caching and performance optimization
 - [ ] Multi-language support
 - [ ] Enterprise authentication integration
