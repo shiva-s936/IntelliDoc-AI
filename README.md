@@ -4,7 +4,7 @@ A production-ready Retrieval-Augmented Generation (RAG) system for intelligent d
 
 ## 🏗️ Architecture
 
-![System Architecture](screenshots/Mermaid%20Chart%20-%20Create%20complex,%20visual%20diagrams%20with%20text.%20A%20smarter%20way%20of%20creating%20diagrams.-2025-07-13-143054.png)
+![System Architecture](screenshots/image.png)
 *Complete RAG system architecture showing data flow from document upload to answer generation*
 
 ![Sequence Diagram](screenshots/sequencedia.png)
