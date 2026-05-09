@@ -1,9 +1,10 @@
 # Core RAG Dependencies
-streamlit>=1.46.1
 chromadb>=1.0.15
 google-genai>=1.25.0
 langchain>=0.3.26
 langchain-community>=0.3.27
+langchain-huggingface>=0.1.0
+langchain-chroma>=0.1.0
 
 # Document Processing
 pypdf2>=3.0.1
@@ -14,7 +15,8 @@ numpy>=2.3.1
 sentence-transformers
 
 # Evaluation
-trulens-eval>=1.5.3
+ragas>=0.4.3
+langchain-google-genai>=4.0.0
 
 # Configuration
 python-dotenv

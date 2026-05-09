@@ -1,52 +1,47 @@
 import os
 from typing import Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 class Config:
-    """Configuration class for RAG system"""
-    
+    """Central configuration for IntelliDoc AI. Values are read from environment variables."""
+
     # API Keys
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-    
-    # Model configurations
-    GEMINI_MODEL = "gemini-2.5-flash"
-    EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-    
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+
+    # Model configuration
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+
     # Chunking parameters
-    CHUNK_SIZE = 1000
-    CHUNK_OVERLAP = 200
-    
-    # Vector store configuration
-    COLLECTION_NAME = "documents"
-    PERSIST_DIRECTORY = "./chroma_db"
-    
-    # Retrieval parameters
-    TOP_K = 5
-    SIMILARITY_THRESHOLD = 0.7
-    
-    # Evaluation parameters
-    TRULENS_METRICS = ["answer_relevance", "context_relevance", "groundedness", "context_recall"]
-    
+    CHUNK_SIZE: int = 1000
+    CHUNK_OVERLAP: int = 200
+
+    # Vector store
+    COLLECTION_NAME: str = "documents"
+    PERSIST_DIRECTORY: str = "./chroma_db"
+
+    # Retrieval
+    TOP_K: int = 5
+    SIMILARITY_THRESHOLD: float = 0.7
+
+    # Evaluation metrics
+    TRULENS_METRICS: list = ["answer_relevance", "context_relevance", "groundedness", "context_recall"]
+
     @classmethod
     def validate_api_keys(cls) -> Dict[str, bool]:
-        """Validate if required API keys are present"""
         return {
             "gemini": bool(cls.GEMINI_API_KEY),
-            "openai": bool(cls.OPENAI_API_KEY)
+            "openai": bool(cls.OPENAI_API_KEY),
         }
-    
+
     @classmethod
     def get_chunking_config(cls) -> Dict[str, Any]:
-        """Get chunking configuration"""
-        return {
-            "chunk_size": cls.CHUNK_SIZE,
-            "chunk_overlap": cls.CHUNK_OVERLAP
-        }
-    
+        return {"chunk_size": cls.CHUNK_SIZE, "chunk_overlap": cls.CHUNK_OVERLAP}
+
     @classmethod
     def get_retrieval_config(cls) -> Dict[str, Any]:
-        """Get retrieval configuration"""
-        return {
-            "top_k": cls.TOP_K,
-            "similarity_threshold": cls.SIMILARITY_THRESHOLD
-        }
+        return {"top_k": cls.TOP_K, "similarity_threshold": cls.SIMILARITY_THRESHOLD}

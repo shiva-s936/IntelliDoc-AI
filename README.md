@@ -1,154 +1,192 @@
-# 🤖 Intelligent Document Q&A System
+# IntelliDoc AI
 
-A production-ready Retrieval-Augmented Generation (RAG) system for intelligent document question-answering with comprehensive evaluation capabilities.
+![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104%2B-009688?logo=fastapi)
+![React](https://img.shields.io/badge/React-18%2B-61DAFB?logo=react)
+![CI](https://github.com/YOUR_USERNAME/IntelliDoc-AI/actions/workflows/ci.yml/badge.svg)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-## 🏗️ Architecture
-
-![System Architecture](screenshots/image.png)
-*Complete RAG system architecture showing data flow from document upload to answer generation*
-
-![Sequence Diagram](screenshots/sequencedia.png)
-*Detailed sequence diagram showing component interactions and data flow*
-
-- **Frontend**: Streamlit web interface with real-time configuration
-- **Backend**: Dual-mode backend with:
-  - **Streamlit** for interactive user experience
-  - **FastAPI** for RESTful API access (`/upload`, `/ask`, `/evaluate`)
-- **Vector Database**: ChromaDB for persistent document embeddings
-- **LLM**: Google Gemini 2.5 Flash for answer generation
-- **Evaluation**: TruLens framework for RAG quality assessment
-
-
-## 🚀 Features
-
-![Application Interface](screenshots/interface.png)
-*Main application interface with document upload, Q&A, and evaluation tabs*
-
-### Core Capabilities
-
-- **Multi-format Document Processing**: PDF, TXT with intelligent chunking
-- **Advanced Retrieval**: Semantic search with contextual compression
-- **AI-Powered Q&A**: Context-aware answer generation with source attribution
-- **Quality Evaluation**: Comprehensive metrics for answer relevance and groundedness
-- **Interactive Interface**: Real-time parameter adjustment and conversation history
-
-### Technical Highlights
-
-- **Production-Ready**: Environment-based configuration and comprehensive logging
-- **Scalable Architecture**: Modular design supporting multiple LLM and embedding providers
-- **Persistent Storage**: ChromaDB with automatic document versioning
-- **Performance Monitoring**: Real-time evaluation metrics and statistics
-- **Source Attribution**: Document-level source tracking and citation
-
-![Document Processing](screenshots/doc_processing.png)
-*Document processing workflow showing chunking and vector storage*
-
-![Source Attribution](screenshots/doc_sources.png)
-*Source attribution and document tracking in Q&A responses*
-
-## 📊 System Capabilities
-
-- **Processing**: Efficient document chunking and vector storage with ChromaDB
-- **Retrieval**: Fast semantic search with configurable similarity thresholds
-- **Scalability**: Modular architecture designed for high-volume document processing
-- **Evaluation**: Comprehensive quality assessment using TruLens framework
-- **Reliability**: Production-ready error handling and session management
-
-## 🛠️ Technology Stack
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Frontend** | Streamlit | Interactive web interface |
-| **LLM** | Google Gemini 2.5 Flash | Answer generation |
-| **Vector DB** | ChromaDB | Document embeddings storage |
-| **Processing** | LangChain, PyPDF2 | Document processing pipeline |
-| **Evaluation** | TruLens | RAG quality assessment |
-| **Configuration** | Environment Variables | Secure settings management |
-
-## 🚀 Quick Start
-
-1. **Install Dependencies**:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Set API Keys**:
-
-   ```bash
-   export GEMINI_API_KEY="your_gemini_api_key"
-   ```
-
-3. **Run Application**:
-
-   ```bash
-   streamlit run app.py --server.port 5000
-   ```
-
-4. **Access Interface**: <http://localhost:5000>
-
-## 📸 Demo Screenshots
-
-### Main Application Interface
-
-![Application Interface](screenshots/interface.png)
-
-### Document Processing Workflow
-
-![Document Processing](screenshots/doc_processing.png)
-
-### Source Attribution & Q&A
-
-![Source Attribution](screenshots/doc_sources.png)
-
-### TruLens Evaluation Dashboard
-
-![TruLens Evaluation](screenshots/trulens.png)
-
-## 📁 Project Structure
-
-```
-IntelligentDocumentQA/
-├── app.py                     # Main Streamlit application
-├── utils/                     # Core utilities
-│   ├── config.py             # Configuration management
-│   ├── document_processor.py # Document loading and chunking
-│   ├── vector_store.py       # Vector database operations
-│   ├── retriever.py          # Advanced retrieval logic
-│   ├── qa_chain.py           # Question answering with LLM
-│   └── evaluation.py         # RAG evaluation framework
-├── .streamlit/config.toml    # Streamlit configuration
-└── chroma_db/                # Persistent vector database
-```
-
-## 🎯 Use Cases
-
-- **Enterprise Knowledge Management**: Internal document Q&A systems
-- **Customer Support**: Automated FAQ and documentation assistance
-- **Research & Analysis**: Academic paper and report analysis
-- **Legal Document Review**: Contract and compliance document processing
-- **Educational Tools**: Textbook and course material Q&A systems
-
-## 🔮 Roadmap
-
-- [ ] Multi-LLM support (OpenAI, Claude, local models)
-- [x] REST API endpoints (FastAPI with `/upload`, `/ask`, `/evaluate`)
-- [ ] Advanced caching and performance optimization
-- [ ] Multi-language support
-- [ ] Enterprise authentication integration
-
-## 📈 Performance & Evaluation
-
-![TruLens Evaluation](screenshots/trulens.png)
-*TruLens evaluation dashboard showing comprehensive RAG quality metrics*
-
-The system includes comprehensive evaluation using TruLens framework:
-
-- **Answer Relevance**: Measures how well answers address questions
-- **Context Relevance**: Evaluates retrieval quality and relevance
-- **Groundedness**: Assesses answer factual accuracy against sources
-- **Real-time Metrics**: Live performance monitoring and statistics
+A production-ready **Retrieval-Augmented Generation (RAG)** system for intelligent document question-answering. Upload PDFs or text files, ask natural-language questions, and get grounded answers with source attribution — backed by Google Gemini and ChromaDB.
 
 ---
 
-*Built with ❤️ using modern AI/ML best practices and production-ready architecture.*
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph Client["Client Layer"]
+        UI["React + Vite UI\nPort 5173"]
+        API_Client["REST API Clients"]
+    end
+
+    subgraph API["API Layer"]
+        FastAPI["FastAPI Server\n/docs /upload /ask /evaluate"]
+    end
+
+    subgraph Core["Core Processing"]
+        DP["Document Processor\nPDF, TXT parsing"]
+        Chunker["Text Splitter\nRecursiveCharacterTextSplitter"]
+        Retriever["Advanced Retriever\nSemantic Search + Compression"]
+        QA["QA Chain\nContext-aware Generation"]
+    end
+
+    subgraph Storage["Storage Layer"]
+        ChromaDB[("ChromaDB\nVector Database")]
+        Embeddings["HuggingFace\nall-MiniLM-L6-v2"]
+    end
+
+    subgraph AI["AI Services"]
+        Gemini["Google Gemini 2.5 Flash\nAnswer Generation"]
+        RAGAS["RAGAS Evaluator\nRAG Quality Metrics"]
+    end
+
+    UI --> FastAPI
+    API_Client --> FastAPI
+    FastAPI --> DP
+    DP --> Chunker
+    Chunker --> Embeddings
+    Embeddings --> ChromaDB
+    FastAPI --> Retriever
+    FastAPI --> Retriever
+    Retriever --> ChromaDB
+    Retriever --> QA
+    QA --> Gemini
+    QA --> RAGAS
+```
+
+---
+
+## Features
+
+- **Multi-format ingestion** — PDF and TXT with intelligent chunking (1 000 chars / 200 overlap)
+- **Semantic search** — HuggingFace `all-MiniLM-L6-v2` embeddings stored in ChromaDB
+- **Grounded answers** — Gemini 2.5 Flash generates answers strictly from retrieved context
+- **Source attribution** — every answer cites the document chunks it used
+- **Quality evaluation** — RAGAS metrics: faithfulness and answer relevancy
+- **React frontend** — React + Vite SPA with drag-and-drop upload, chat Q&A, and RAGAS evaluation dashboard
+- **Docker-ready** — single `docker-compose up` spins up both services
+
+---
+
+## Tech Stack
+
+| Component  | Technology                   |
+| ---------- | ---------------------------- |
+| LLM        | Google Gemini 2.5 Flash      |
+| Embeddings | HuggingFace all-MiniLM-L6-v2 |
+| Vector DB  | ChromaDB (persistent)        |
+| Frontend   | React + Vite + Tailwind CSS  |
+| REST API   | FastAPI + Uvicorn            |
+| Evaluation | RAGAS + Gemini               |
+| Testing    | pytest (22 tests)            |
+| Linting    | ruff                         |
+
+---
+
+## Quick Start
+
+### 1. Clone & install
+
+```bash
+git clone https://github.com/YOUR_USERNAME/IntelliDoc-AI.git
+cd IntelliDoc-AI
+pip install -r requirements.txt
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+# Edit .env and add your GEMINI_API_KEY
+```
+
+### 3. Run
+
+```bash
+# FastAPI backend
+make run-api         # → http://localhost:8000/docs
+
+# React frontend (separate terminal)
+make run-ui          # → http://localhost:5173
+```
+
+### 4. Docker (optional)
+
+```bash
+docker-compose up --build
+```
+
+---
+
+## REST API
+
+| Method     | Endpoint              | Description                            |
+| ---------- | --------------------- | -------------------------------------- |
+| `GET`      | `/health`             | System health & document count         |
+| `POST`     | `/documents/upload`   | Upload and index a PDF or TXT file     |
+| `POST`     | `/questions/ask`      | Ask a question and get an answer       |
+| `POST`     | `/evaluation/run`     | Run RAGAS quality evaluation           |
+| `GET`      | `/documents/info`     | Collection statistics                  |
+| `DELETE`   | `/documents/clear`    | Reset the vector store                 |
+
+Interactive docs available at **`/docs`** (Swagger) and **`/redoc`**.
+
+---
+
+## Project Structure
+
+```text
+IntelliDoc-AI/
+├── api.py                      # FastAPI REST API
+├── utils/
+│   ├── config.py               # Environment-based configuration
+│   ├── document_processor.py   # PDF/TXT loading and chunking
+│   ├── vector_store.py         # ChromaDB operations
+│   ├── retriever.py            # MMR retrieval + similarity filtering
+│   ├── qa_chain.py             # Gemini LLM integration
+│   └── evaluation.py           # RAGAS evaluation framework
+├── frontend/                   # React + Vite + Tailwind CSS
+│   └── src/
+│       ├── App.jsx
+│       ├── api.js
+│       └── components/         # Upload, QA, Evaluation, Sidebar
+├── tests/                      # pytest test suite (22 tests)
+├── Dockerfile
+├── docker-compose.yml
+├── Makefile
+└── .github/workflows/ci.yml    # GitHub Actions CI
+```
+
+---
+
+## Development
+
+```bash
+make test      # Run all 22 tests
+make lint      # Ruff linter
+make format    # Ruff formatter
+```
+
+---
+
+## Evaluation Metrics (RAGAS)
+
+Evaluation is powered by [RAGAS](https://docs.ragas.io) using Google Gemini as the judge LLM. No ground-truth labels are required.
+
+| Metric               | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| **Faithfulness**     | Fraction of answer claims supported by context |
+| **Answer Relevancy** | How directly the answer addresses the question |
+
+---
+
+## Use Cases
+
+- Enterprise knowledge management and internal documentation search
+- Customer support automation from product documentation
+- Research paper and report analysis
+- Legal document review and compliance checking
+
+---
+
+*Built with LangChain, ChromaDB, Google Gemini, React, FastAPI, and RAGAS.*

@@ -1,222 +1,168 @@
 import logging
 from typing import List, Optional, Dict, Any
 from langchain_core.documents import Document
-from langchain_core.language_models import BaseLLM as LLM
 
-# Handle import errors for optional compression features
-try:
-    from langchain.retrievers import ContextualCompressionRetriever
-    from langchain.retrievers.document_compressors import LLMChainExtractor
-    COMPRESSION_AVAILABLE = True
-except ImportError:
-    try:
-        from langchain_community.retrievers import ContextualCompressionRetriever
-        from langchain_community.retrievers.document_compressors import LLMChainExtractor
-        COMPRESSION_AVAILABLE = True
-    except ImportError:
-        COMPRESSION_AVAILABLE = False
-        ContextualCompressionRetriever = None
-        LLMChainExtractor = None
-
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class AdvancedRetriever:
-    """Advanced retriever with contextual compression and filtering"""
-    
-    def __init__(self, vector_store, llm: Optional[LLM] = None):
+    """
+    Retriever with MMR diversity re-ranking and similarity threshold filtering.
+
+    ChromaDB returns L2 distance for normalized embeddings.
+    Relationship to cosine similarity: cosine_sim ≈ 1 - distance / 2
+    So similarity_threshold → distance_threshold = 2 * (1 - similarity_threshold).
+    """
+
+    def __init__(self, vector_store):
         self.vector_store = vector_store
-        self.llm = llm
-        self.base_retriever = None
-        self.compression_retriever = None
-        self._setup_retrievers()
-    
-    def _setup_retrievers(self):
-        """Setup base and compression retrievers"""
+        logger.info("Retrievers setup successfully")
+
+    # ── Public API ────────────────────────────────────────────────────────────
+
+    def retrieve_documents(
+        self,
+        query: str,
+        k: int = 5,
+        similarity_threshold: float = 0.3,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[Document]:
+        """Retrieve relevant documents using MMR + similarity threshold."""
+        if not query.strip():
+            raise ValueError("Query cannot be empty")
+
         try:
-            # Setup base retriever
-            self.base_retriever = self.vector_store.get_retriever(
-                search_type="similarity",
-                search_kwargs={"k": 10}  # Retrieve more initially for filtering
-            )
-            
-            # Setup compression retriever if LLM is available and compression is supported
-            if self.llm and COMPRESSION_AVAILABLE and LLMChainExtractor is not None:
-                compressor = LLMChainExtractor.from_llm(self.llm)
-                self.compression_retriever = ContextualCompressionRetriever(
-                    base_compressor=compressor,
-                    base_retriever=self.base_retriever
-                )
-            
-            logger.info("Retrievers setup successfully")
-            
-        except Exception as e:
-            logger.error(f"Error setting up retrievers: {e}")
-            raise
-    
-    def retrieve_documents(self, 
-                          query: str, 
-                          k: int = 5, 
-                          use_compression: bool = False,
-                          similarity_threshold: float = 0.7,
-                          filters: Optional[Dict[str, Any]] = None) -> List[Document]:
-        """Retrieve relevant documents with optional compression and filtering"""
-        try:
-            if not query.strip():
-                raise ValueError("Query cannot be empty")
-            
-            # Use compression retriever if available and requested
-            if use_compression and self.compression_retriever:
-                documents = self.compression_retriever.get_relevant_documents(query)
-                logger.info(f"Retrieved {len(documents)} compressed documents")
-            else:
-                # Use base similarity search with scores for filtering
-                results_with_scores = self.vector_store.similarity_search_with_score(
-                    query=query,
-                    k=k * 2,  # Get more to allow for filtering
-                    filter_dict=filters
-                )
-                
-                # Filter by similarity threshold - Chroma uses distance (lower is better)
-                # Convert similarity_threshold to distance threshold
-                distance_threshold = 2.0  # More lenient threshold for better retrieval
-                filtered_results = [
-                    (doc, score) for doc, score in results_with_scores 
-                    if score <= distance_threshold
-                ]
-                
-                # Sort by score and take top k
-                filtered_results.sort(key=lambda x: x[1])
-                documents = [doc for doc, score in filtered_results[:k]]
-                
-                logger.info(f"Retrieved {len(documents)} documents after filtering (threshold: {similarity_threshold})")
-            
-            return documents
-            
-        except Exception as e:
-            logger.error(f"Error retrieving documents: {e}")
-            raise
-    
-    def get_relevant_context(self, 
-                           query: str, 
-                           k: int = 5, 
-                           max_tokens: int = 4000,
-                           use_compression: bool = False,
-                           similarity_threshold: float = 0.7) -> str:
-        """Get relevant context as a single string with token limit"""
-        try:
-            documents = self.retrieve_documents(
-                query=query,
-                k=k,
-                use_compression=use_compression,
-                similarity_threshold=similarity_threshold
-            )
-            
-            if not documents:
-                return "No relevant context found."
-            
-            # Combine documents into context
-            context_parts = []
-            total_tokens = 0
-            
-            for i, doc in enumerate(documents):
-                content = doc.page_content.strip()
-                
-                # Estimate tokens (roughly 4 characters per token)
-                estimated_tokens = len(content) // 4
-                
-                if total_tokens + estimated_tokens <= max_tokens:
-                    context_parts.append(f"Source {i+1}:\n{content}")
-                    total_tokens += estimated_tokens
-                else:
-                    # Truncate the last document to fit within token limit
-                    remaining_tokens = max_tokens - total_tokens
-                    remaining_chars = remaining_tokens * 4
-                    
-                    if remaining_chars > 100:  # Only add if meaningful content can fit
-                        truncated_content = content[:remaining_chars] + "..."
-                        context_parts.append(f"Source {i+1}:\n{truncated_content}")
-                    
-                    break
-            
-            context = "\n\n".join(context_parts)
-            logger.info(f"Generated context from {len(context_parts)} sources, ~{total_tokens} tokens")
-            
-            return context
-            
-        except Exception as e:
-            logger.error(f"Error getting relevant context: {e}")
-            raise
-    
-    def get_document_metadata(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
-        """Get metadata of retrieved documents"""
-        try:
-            documents = self.retrieve_documents(query, k)
-            
-            metadata_list = []
-            for doc in documents:
-                metadata = doc.metadata.copy()
-                metadata['content_preview'] = doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content
-                metadata['content_length'] = len(doc.page_content)
-                metadata_list.append(metadata)
-            
-            return metadata_list
-            
-        except Exception as e:
-            logger.error(f"Error getting document metadata: {e}")
-            raise
-    
-    def search_with_scores_and_metadata(self, 
-                                      query: str, 
-                                      k: int = 5,
-                                      similarity_threshold: float = 0.7) -> List[Dict[str, Any]]:
-        """Search and return documents with scores and metadata"""
-        try:
+            fetch_k = max(k * 4, 20)
+
+            # Step 1 — threshold filter using scored similarity search
             results_with_scores = self.vector_store.similarity_search_with_score(
                 query=query,
-                k=k * 2
+                k=fetch_k,
+                filter_dict=filters,
             )
-            
-            # Filter and format results
-            filtered_results = []
-            for doc, score in results_with_scores:
-                if score <= 2.0:  # More lenient distance threshold
-                    result = {
-                        'content': doc.page_content,
-                        'metadata': doc.metadata,
-                        'relevance_score': 1 - score,  # Convert distance to similarity
-                        'content_preview': doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content
+
+            # Convert similarity threshold → L2 distance threshold
+            distance_threshold = 2.0 * (1.0 - similarity_threshold)
+            passing = {
+                doc.page_content
+                for doc, score in results_with_scores
+                if score <= distance_threshold
+            }
+
+            if not passing:
+                logger.info("No documents passed similarity_threshold=%.2f", similarity_threshold)
+                return []
+
+            # Step 2 — MMR re-ranking over the same candidate pool for diversity
+            mmr_docs = self.vector_store.vectorstore.max_marginal_relevance_search(
+                query=query,
+                k=k,
+                fetch_k=fetch_k,
+                lambda_mult=0.7,  # 0.7 = relevance-weighted; 0.5 = max diversity
+                filter=filters,
+            )
+
+            # Keep only chunks that also passed the threshold filter
+            diverse = [d for d in mmr_docs if d.page_content in passing]
+
+            # Fall back to score-sorted if MMR discarded too many
+            if len(diverse) < min(k, len(passing)):
+                fallback = [doc for doc, _ in sorted(results_with_scores, key=lambda x: x[1])
+                            if doc.page_content in passing]
+                diverse = fallback
+
+            result = diverse[:k]
+            logger.info(
+                "Retrieved %d documents (MMR + threshold=%.2f)", len(result), similarity_threshold
+            )
+            return result
+
+        except Exception as e:
+            logger.error("Error retrieving documents: %s", e)
+            raise
+
+    def get_relevant_context(
+        self,
+        query: str,
+        k: int = 5,
+        similarity_threshold: float = 0.3,
+        max_tokens: int = 4000,
+    ) -> str:
+        """Return retrieved chunks joined as a single context string."""
+        documents = self.retrieve_documents(
+            query=query,
+            k=k,
+            similarity_threshold=similarity_threshold,
+        )
+
+        if not documents:
+            return "No relevant context found."
+
+        context_parts: List[str] = []
+        total_tokens = 0
+
+        for i, doc in enumerate(documents):
+            content = doc.page_content.strip()
+            estimated_tokens = len(content) // 4
+
+            if total_tokens + estimated_tokens <= max_tokens:
+                context_parts.append(f"Source {i + 1}:\n{content}")
+                total_tokens += estimated_tokens
+            else:
+                remaining_chars = (max_tokens - total_tokens) * 4
+                if remaining_chars > 100:
+                    context_parts.append(f"Source {i + 1}:\n{content[:remaining_chars]}...")
+                break
+
+        logger.info(
+            "Generated context from %d sources (~%d tokens)", len(context_parts), total_tokens
+        )
+        return "\n\n".join(context_parts)
+
+    def get_document_metadata(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
+        """Return metadata for the top-k retrieved documents."""
+        documents = self.retrieve_documents(query, k)
+        metadata_list = []
+        for doc in documents:
+            meta = doc.metadata.copy()
+            meta["content_preview"] = (
+                doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content
+            )
+            meta["content_length"] = len(doc.page_content)
+            metadata_list.append(meta)
+        return metadata_list
+
+    def search_with_scores_and_metadata(
+        self,
+        query: str,
+        k: int = 5,
+        similarity_threshold: float = 0.3,
+    ) -> List[Dict[str, Any]]:
+        """Search and return documents with relevance scores and metadata."""
+        results_with_scores = self.vector_store.similarity_search_with_score(
+            query=query,
+            k=k * 2,
+        )
+
+        distance_threshold = 2.0 * (1.0 - similarity_threshold)
+        filtered = []
+        for doc, score in results_with_scores:
+            if score <= distance_threshold:
+                # cosine_sim = 1 - distance/2 for L2-normalized vectors
+                cosine_sim = max(0.0, 1.0 - score / 2.0)
+                filtered.append(
+                    {
+                        "content": doc.page_content,
+                        "metadata": doc.metadata,
+                        "relevance_score": cosine_sim,
+                        "content_preview": (
+                            doc.page_content[:200] + "..."
+                            if len(doc.page_content) > 200
+                            else doc.page_content
+                        ),
                     }
-                    filtered_results.append(result)
-            
-            # Sort by relevance score (descending)
-            filtered_results.sort(key=lambda x: x['relevance_score'], reverse=True)
-            
-            return filtered_results[:k]
-            
-        except Exception as e:
-            logger.error(f"Error searching with scores and metadata: {e}")
-            raise
-    
-    def update_search_params(self, search_kwargs: Dict[str, Any]):
-        """Update search parameters for the base retriever"""
-        try:
-            self.base_retriever = self.vector_store.get_retriever(
-                search_type="similarity",
-                search_kwargs=search_kwargs
-            )
-            
-            # Update compression retriever if it exists
-            if self.compression_retriever and self.llm:
-                compressor = LLMChainExtractor.from_llm(self.llm)
-                self.compression_retriever = ContextualCompressionRetriever(
-                    base_compressor=compressor,
-                    base_retriever=self.base_retriever
                 )
-            
-            logger.info("Search parameters updated successfully")
-            
-        except Exception as e:
-            logger.error(f"Error updating search parameters: {e}")
-            raise
+
+        filtered.sort(key=lambda x: x["relevance_score"], reverse=True)
+        return filtered[:k]

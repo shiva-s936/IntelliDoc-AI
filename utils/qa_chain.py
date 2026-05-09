@@ -23,14 +23,13 @@ class QAChain:
         self.client = genai.Client(api_key=self.api_key)
         
         # Default prompt template
-        self.prompt_template = """You are an AI assistant tasked with answering questions based on provided context. 
-Please follow these guidelines:
+        self.prompt_template = """You are a helpful assistant that answers questions strictly from the provided document context.
 
-1. Answer the question using ONLY the information provided in the context below
-2. If the context doesn't contain enough information to answer the question, say "I cannot answer this question based on the provided context"
-3. Be concise but comprehensive in your response
-4. Cite specific parts of the context when relevant
-5. Do not use any knowledge outside of the provided context
+Rules:
+- Answer ONLY from the context below — do not use outside knowledge.
+- If the question is a greeting or casual message (e.g. "hi", "hello"), respond warmly and briefly explain what you can help with based on the documents.
+- If the context does not contain enough information to answer a factual question, say so clearly and suggest what the user could ask instead.
+- Be concise, accurate, and cite sources where helpful.
 
 Context:
 {context}

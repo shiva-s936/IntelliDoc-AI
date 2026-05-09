@@ -83,7 +83,7 @@ class DocumentProcessor:
             raise ValueError(f"Unsupported file format: {file_extension}")
     
     def process_uploaded_file(self, uploaded_file) -> str:
-        """Process uploaded file from Streamlit"""
+        """Process an in-memory uploaded file object (e.g. from FastAPI UploadFile)."""
         try:
             # Create temporary file
             with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
