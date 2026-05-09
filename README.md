@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104%2B-009688?logo=fastapi)
 ![React](https://img.shields.io/badge/React-18%2B-61DAFB?logo=react)
-![CI](https://github.com/YOUR_USERNAME/IntelliDoc-AI/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/shiva-s936/IntelliDoc-AI/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 A production-ready **Retrieval-Augmented Generation (RAG)** system for intelligent document question-answering. Upload PDFs or text files, ask natural-language questions, and get grounded answers with source attribution — backed by Google Gemini and ChromaDB.
@@ -26,7 +26,7 @@ flowchart TB
     subgraph Core["Core Processing"]
         DP["Document Processor\nPDF, TXT parsing"]
         Chunker["Text Splitter\nRecursiveCharacterTextSplitter"]
-        Retriever["Advanced Retriever\nSemantic Search + Compression"]
+        Retriever["Advanced Retriever\nMMR + Similarity Threshold"]
         QA["QA Chain\nContext-aware Generation"]
     end
 
@@ -47,11 +47,11 @@ flowchart TB
     Chunker --> Embeddings
     Embeddings --> ChromaDB
     FastAPI --> Retriever
-    FastAPI --> Retriever
     Retriever --> ChromaDB
     Retriever --> QA
     QA --> Gemini
-    QA --> RAGAS
+    FastAPI --> RAGAS
+    RAGAS --> Gemini
 ```
 
 ---
@@ -88,7 +88,7 @@ flowchart TB
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/IntelliDoc-AI.git
+git clone https://github.com/shiva-s936/IntelliDoc-AI.git
 cd IntelliDoc-AI
 pip install -r requirements.txt
 ```
@@ -124,10 +124,11 @@ docker-compose up --build
 | ---------- | --------------------- | -------------------------------------- |
 | `GET`      | `/health`             | System health & document count         |
 | `POST`     | `/documents/upload`   | Upload and index a PDF or TXT file     |
-| `POST`     | `/questions/ask`      | Ask a question and get an answer       |
-| `POST`     | `/evaluation/run`     | Run RAGAS quality evaluation           |
+| `GET`      | `/documents/list`     | List all indexed document filenames    |
 | `GET`      | `/documents/info`     | Collection statistics                  |
 | `DELETE`   | `/documents/clear`    | Reset the vector store                 |
+| `POST`     | `/questions/ask`      | Ask a question and get an answer       |
+| `POST`     | `/evaluation/run`     | Run RAGAS quality evaluation           |
 
 Interactive docs available at **`/docs`** (Swagger) and **`/redoc`**.
 
