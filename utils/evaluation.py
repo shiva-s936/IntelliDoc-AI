@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -39,11 +39,11 @@ class RAGEvaluator:
         try:
             # Use legacy singletons — they accept LangchainLLMWrapper (collections-style
             # metrics only accept InstructorLLM and are not compatible with Langchain wrappers).
-            from ragas.metrics import faithfulness, answer_relevancy
-            from ragas.llms import LangchainLLMWrapper
-            from ragas.embeddings import LangchainEmbeddingsWrapper
             from langchain_google_genai import ChatGoogleGenerativeAI
             from langchain_huggingface import HuggingFaceEmbeddings
+            from ragas.embeddings import LangchainEmbeddingsWrapper
+            from ragas.llms import LangchainLLMWrapper
+            from ragas.metrics import answer_relevancy, faithfulness
 
             llm = ChatGoogleGenerativeAI(
                 model="gemini-2.5-flash",
@@ -79,11 +79,11 @@ class RAGEvaluator:
 
     def evaluate_rag_system(
         self,
-        questions: List[str],
-        answers: List[str],
-        contexts: List[List[str]],
-        ground_truths: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        questions: list[str],
+        answers: list[str],
+        contexts: list[list[str]],
+        ground_truths: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Evaluate a RAG system using RAGAS metrics."""
         if self.ragas_available:
             return self._ragas_evaluate(questions, answers, contexts)
@@ -93,9 +93,9 @@ class RAGEvaluator:
         self,
         question: str,
         answer: str,
-        context: List[str],
-        ground_truth: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        context: list[str],
+        ground_truth: str | None = None,
+    ) -> dict[str, Any]:
         """Evaluate a single question-answer pair."""
         return self.evaluate_rag_system(
             questions=[question],
@@ -104,7 +104,7 @@ class RAGEvaluator:
             ground_truths=[ground_truth] if ground_truth else None,
         )
 
-    def batch_evaluate(self, qa_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def batch_evaluate(self, qa_results: list[dict[str, Any]]) -> dict[str, Any]:
         """Evaluate a list of QA results produced by QAChain."""
         questions, answers, contexts = [], [], []
         for result in qa_results:
@@ -119,7 +119,7 @@ class RAGEvaluator:
                 contexts.append([""])
         return self.evaluate_rag_system(questions, answers, contexts)
 
-    def generate_evaluation_report(self, results: Dict[str, Any]) -> str:
+    def generate_evaluation_report(self, results: dict[str, Any]) -> str:
         """Return a human-readable evaluation report string."""
         if "error" in results:
             return f"Evaluation Error: {results['error']}"
@@ -144,7 +144,7 @@ class RAGEvaluator:
 
         return "\n".join(lines)
 
-    def get_metrics_info(self) -> Dict[str, Any]:
+    def get_metrics_info(self) -> dict[str, Any]:
         return {
             "available_metrics": list(self.METRICS_INFO.keys()),
             "descriptions": self.METRICS_INFO,
@@ -156,13 +156,13 @@ class RAGEvaluator:
 
     def _ragas_evaluate(
         self,
-        questions: List[str],
-        answers: List[str],
-        contexts: List[List[str]],
-    ) -> Dict[str, Any]:
+        questions: list[str],
+        answers: list[str],
+        contexts: list[list[str]],
+    ) -> dict[str, Any]:
         try:
-            from ragas import evaluate
             from datasets import Dataset
+            from ragas import evaluate
 
             dataset = Dataset.from_dict(
                 {
@@ -176,7 +176,7 @@ class RAGEvaluator:
             result = evaluate(dataset, metrics=self._metrics)
             scores_df: pd.DataFrame = result.to_pandas()
 
-            overall: Dict[str, float] = {}
+            overall: dict[str, float] = {}
             for name in self._metric_names:
                 if name in scores_df.columns:
                     mean_val = scores_df[name].mean()
@@ -202,10 +202,10 @@ class RAGEvaluator:
 
     def _heuristic_evaluate(
         self,
-        questions: List[str],
-        answers: List[str],
-        contexts: List[List[str]],
-    ) -> Dict[str, Any]:
+        questions: list[str],
+        answers: list[str],
+        contexts: list[list[str]],
+    ) -> dict[str, Any]:
         """Lightweight heuristic fallback — no LLM calls required."""
         logger.info("Using heuristic evaluation fallback")
 

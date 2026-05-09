@@ -1,6 +1,7 @@
-import os
 import logging
-from typing import List, Dict, Any, Optional
+import os
+from typing import Any
+
 from google import genai
 from google.genai import types
 from langchain_core.documents import Document
@@ -11,17 +12,17 @@ logger = logging.getLogger(__name__)
 
 class QAChain:
     """Question Answering chain using Gemini LLM"""
-    
-    def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-2.5-flash"):
+
+    def __init__(self, api_key: str | None = None, model_name: str = "gemini-2.5-flash"):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model_name = model_name
-        
+
         if not self.api_key:
             raise ValueError("Gemini API key is required")
-        
+
         # Initialize Gemini client
         self.client = genai.Client(api_key=self.api_key)
-        
+
         # Default prompt template
         self.prompt_template = """You are a helpful assistant that answers questions strictly from the provided document context.
 
@@ -37,18 +38,18 @@ Context:
 Question: {question}
 
 Answer:"""
-    
+
     def set_custom_prompt(self, prompt_template: str):
         """Set a custom prompt template"""
         self.prompt_template = prompt_template
         logger.info("Custom prompt template set")
-    
-    def generate_answer(self, question: str, context: str, temperature: float = 0.3) -> Dict[str, Any]:
+
+    def generate_answer(self, question: str, context: str, temperature: float = 0.3) -> dict[str, Any]:
         """Generate answer using Gemini LLM"""
         try:
             if not question.strip():
                 raise ValueError("Question cannot be empty")
-            
+
             if not context.strip():
                 return {
                     "answer": "No context provided to answer the question.",
@@ -57,13 +58,13 @@ Answer:"""
                     "model": self.model_name,
                     "error": "No context"
                 }
-            
+
             # Format the prompt
             formatted_prompt = self.prompt_template.format(
                 context=context,
                 question=question
             )
-            
+
             # Generate response using Gemini
             response = self.client.models.generate_content(
                 model=self.model_name,
@@ -73,10 +74,10 @@ Answer:"""
                     max_output_tokens=1000
                 )
             )
-            
+
             if not response.text:
                 raise ValueError("Empty response from model")
-            
+
             result = {
                 "answer": response.text.strip(),
                 "context_used": context,
@@ -86,10 +87,10 @@ Answer:"""
                 "prompt_used": formatted_prompt,
                 "success": True
             }
-            
+
             logger.info("Successfully generated answer using Gemini")
             return result
-            
+
         except Exception as e:
             logger.error(f"Error generating answer: {e}")
             return {
@@ -100,13 +101,13 @@ Answer:"""
                 "error": str(e),
                 "success": False
             }
-    
-    def answer_with_sources(self, question: str, documents: List[Document], temperature: float = 0.3) -> Dict[str, Any]:
+
+    def answer_with_sources(self, question: str, documents: list[Document], temperature: float = 0.3) -> dict[str, Any]:
         """Generate answer with source attribution"""
         try:
             if not question.strip():
                 raise ValueError("Question cannot be empty")
-            
+
             if not documents:
                 return {
                     "answer": "No documents provided to generate answer.",
@@ -116,15 +117,15 @@ Answer:"""
                     "error": "No documents",
                     "success": False
                 }
-            
+
             # Create context from documents
             context_parts = []
             sources = []
-            
+
             for i, doc in enumerate(documents):
                 # Add document content to context
                 context_parts.append(f"Source {i+1}: {doc.page_content}")
-                
+
                 # Create source information
                 source_info = {
                     "source_id": i + 1,
@@ -132,19 +133,19 @@ Answer:"""
                     "metadata": doc.metadata if hasattr(doc, 'metadata') else {}
                 }
                 sources.append(source_info)
-            
+
             context = "\n\n".join(context_parts)
-            
+
             # Generate answer using the context
             result = self.generate_answer(question, context, temperature)
-            
+
             # Add sources to the result
             result["sources"] = sources
             result["num_sources"] = len(sources)
-            
+
             logger.info(f"Successfully generated answer with {len(sources)} sources")
             return result
-            
+
         except Exception as e:
             logger.error(f"Error generating answer with sources: {e}")
             return {
@@ -155,11 +156,11 @@ Answer:"""
                 "error": str(e),
                 "success": False
             }
-    
-    def batch_qa(self, questions: List[str], context: str, temperature: float = 0.3) -> List[Dict[str, Any]]:
+
+    def batch_qa(self, questions: list[str], context: str, temperature: float = 0.3) -> list[dict[str, Any]]:
         """Answer multiple questions with the same context"""
         results = []
-        
+
         for question in questions:
             try:
                 result = self.generate_answer(question, context, temperature)
@@ -174,11 +175,11 @@ Answer:"""
                     "error": str(e),
                     "success": False
                 })
-        
+
         logger.info(f"Completed batch QA for {len(questions)} questions")
         return results
-    
-    def validate_answer_quality(self, answer: str, question: str, context: str) -> Dict[str, Any]:
+
+    def validate_answer_quality(self, answer: str, question: str, context: str) -> dict[str, Any]:
         """Basic validation of answer quality"""
         try:
             quality_metrics = {
@@ -188,7 +189,7 @@ Answer:"""
                 "says_cannot_answer": "cannot answer" in answer.lower() or "don't know" in answer.lower(),
                 "answer_to_question_ratio": len(answer) / len(question) if len(question) > 0 else 0
             }
-            
+
             # Basic quality score
             score = 0
             if quality_metrics["has_answer"]:
@@ -197,12 +198,12 @@ Answer:"""
                 score += 0.4
             if 50 <= quality_metrics["answer_length"] <= 500:
                 score += 0.3
-            
+
             quality_metrics["quality_score"] = score
             quality_metrics["is_good_quality"] = score >= 0.7
-            
+
             return quality_metrics
-            
+
         except Exception as e:
             logger.error(f"Error validating answer quality: {e}")
             return {"error": str(e)}

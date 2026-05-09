@@ -1,12 +1,11 @@
-import os
 import logging
-from typing import List, Optional
+import os
 
 import chromadb
 from chromadb.config import Settings
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
+from langchain_huggingface import HuggingFaceEmbeddings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ class VectorStore:
             settings=Settings(anonymized_telemetry=False, allow_reset=True),
         )
 
-        self.vectorstore: Optional[Chroma] = None
+        self.vectorstore: Chroma | None = None
         self._initialize_vectorstore()
 
     def _initialize_vectorstore(self) -> None:
@@ -50,7 +49,7 @@ class VectorStore:
         )
         logger.info(f"Vector store initialized with collection: {self.collection_name}")
 
-    def add_documents(self, documents: List[Document]) -> List[str]:
+    def add_documents(self, documents: list[Document]) -> list[str]:
         if not documents:
             raise ValueError("No documents provided")
         ids = self.vectorstore.add_documents(documents)
@@ -58,8 +57,8 @@ class VectorStore:
         return ids
 
     def similarity_search(
-        self, query: str, k: int = 5, filter_dict: Optional[dict] = None
-    ) -> List[Document]:
+        self, query: str, k: int = 5, filter_dict: dict | None = None
+    ) -> list[Document]:
         if not query.strip():
             raise ValueError("Query cannot be empty")
         results = self.vectorstore.similarity_search(query=query, k=k, filter=filter_dict)
@@ -67,8 +66,8 @@ class VectorStore:
         return results
 
     def similarity_search_with_score(
-        self, query: str, k: int = 5, filter_dict: Optional[dict] = None
-    ) -> List[tuple]:
+        self, query: str, k: int = 5, filter_dict: dict | None = None
+    ) -> list[tuple]:
         if not query.strip():
             raise ValueError("Query cannot be empty")
         results = self.vectorstore.similarity_search_with_score(
@@ -90,7 +89,7 @@ class VectorStore:
             "persist_directory": self.persist_directory,
         }
 
-    def get_retriever(self, search_type: str = "similarity", search_kwargs: Optional[dict] = None):
+    def get_retriever(self, search_type: str = "similarity", search_kwargs: dict | None = None):
         if search_kwargs is None:
             search_kwargs = {"k": 5}
         return self.vectorstore.as_retriever(
@@ -102,7 +101,7 @@ class VectorStore:
         self._initialize_vectorstore()
         logger.info(f"Deleted and recreated collection: {self.collection_name}")
 
-    def update_documents(self, documents: List[Document], ids: List[str]) -> List[str]:
+    def update_documents(self, documents: list[Document], ids: list[str]) -> list[str]:
         if len(documents) != len(ids):
             raise ValueError("Number of documents and IDs must match")
         self.vectorstore.delete(ids=ids)

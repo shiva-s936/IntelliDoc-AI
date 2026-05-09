@@ -1,6 +1,6 @@
 import os
-import pytest
 from unittest.mock import patch
+
 from utils.config import Config
 
 

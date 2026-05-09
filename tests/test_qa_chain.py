@@ -1,6 +1,8 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from langchain_core.documents import Document
+
 from utils.qa_chain import QAChain
 
 

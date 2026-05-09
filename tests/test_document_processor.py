@@ -1,5 +1,5 @@
-import os
 import pytest
+
 from utils.document_processor import DocumentProcessor
 
 

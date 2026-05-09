@@ -1,5 +1,6 @@
 import os
-from typing import Dict, Any
+from typing import Any
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -32,16 +33,16 @@ class Config:
     TRULENS_METRICS: list = ["answer_relevance", "context_relevance", "groundedness", "context_recall"]
 
     @classmethod
-    def validate_api_keys(cls) -> Dict[str, bool]:
+    def validate_api_keys(cls) -> dict[str, bool]:
         return {
             "gemini": bool(cls.GEMINI_API_KEY),
             "openai": bool(cls.OPENAI_API_KEY),
         }
 
     @classmethod
-    def get_chunking_config(cls) -> Dict[str, Any]:
+    def get_chunking_config(cls) -> dict[str, Any]:
         return {"chunk_size": cls.CHUNK_SIZE, "chunk_overlap": cls.CHUNK_OVERLAP}
 
     @classmethod
-    def get_retrieval_config(cls) -> Dict[str, Any]:
+    def get_retrieval_config(cls) -> dict[str, Any]:
         return {"top_k": cls.TOP_K, "similarity_threshold": cls.SIMILARITY_THRESHOLD}

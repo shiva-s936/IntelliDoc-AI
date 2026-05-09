@@ -1,5 +1,6 @@
 import logging
-from typing import List, Optional, Dict, Any
+from typing import Any
+
 from langchain_core.documents import Document
 
 logging.basicConfig(level=logging.INFO)
@@ -26,8 +27,8 @@ class AdvancedRetriever:
         query: str,
         k: int = 5,
         similarity_threshold: float = 0.3,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Document]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[Document]:
         """Retrieve relevant documents using MMR + similarity threshold."""
         if not query.strip():
             raise ValueError("Query cannot be empty")
@@ -99,7 +100,7 @@ class AdvancedRetriever:
         if not documents:
             return "No relevant context found."
 
-        context_parts: List[str] = []
+        context_parts: list[str] = []
         total_tokens = 0
 
         for i, doc in enumerate(documents):
@@ -120,7 +121,7 @@ class AdvancedRetriever:
         )
         return "\n\n".join(context_parts)
 
-    def get_document_metadata(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
+    def get_document_metadata(self, query: str, k: int = 5) -> list[dict[str, Any]]:
         """Return metadata for the top-k retrieved documents."""
         documents = self.retrieve_documents(query, k)
         metadata_list = []
@@ -138,7 +139,7 @@ class AdvancedRetriever:
         query: str,
         k: int = 5,
         similarity_threshold: float = 0.3,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search and return documents with relevance scores and metadata."""
         results_with_scores = self.vector_store.similarity_search_with_score(
             query=query,

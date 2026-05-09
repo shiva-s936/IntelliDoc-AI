@@ -1,30 +1,31 @@
+import logging
+import os
+import tempfile
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
+from datetime import datetime
+from typing import Any
+
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-import tempfile
-import os
-import logging
-from datetime import datetime
 
 from utils.config import Config
 from utils.document_processor import DocumentProcessor
-from utils.vector_store import VectorStore
-from utils.retriever import AdvancedRetriever
-from utils.qa_chain import QAChain
 from utils.evaluation import RAGEvaluator
+from utils.qa_chain import QAChain
+from utils.retriever import AdvancedRetriever
+from utils.vector_store import VectorStore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global components
-vector_store: Optional[VectorStore] = None
-retriever: Optional[AdvancedRetriever] = None
-qa_chain: Optional[QAChain] = None
-document_processor: Optional[DocumentProcessor] = None
-evaluator: Optional[RAGEvaluator] = None
+vector_store: VectorStore | None = None
+retriever: AdvancedRetriever | None = None
+qa_chain: QAChain | None = None
+document_processor: DocumentProcessor | None = None
+evaluator: RAGEvaluator | None = None
 
 
 @asynccontextmanager
@@ -78,20 +79,20 @@ app.add_middleware(
 
 class QuestionRequest(BaseModel):
     question: str
-    top_k: Optional[int] = 5
-    similarity_threshold: Optional[float] = 0.1
-    temperature: Optional[float] = 0.3
-    include_sources: Optional[bool] = True
+    top_k: int | None = 5
+    similarity_threshold: float | None = 0.1
+    temperature: float | None = 0.3
+    include_sources: bool | None = True
 
 
 class QuestionResponse(BaseModel):
     answer: str
-    sources: Optional[List[Dict[str, Any]]] = None
+    sources: list[dict[str, Any]] | None = None
     question: str
     success: bool
     timestamp: str
-    processing_time: Optional[float] = None
-    context_used: Optional[str] = None
+    processing_time: float | None = None
+    context_used: str | None = None
 
 
 class DocumentUploadResponse(BaseModel):
@@ -105,28 +106,28 @@ class DocumentUploadResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    api_keys_configured: Dict[str, bool]
+    api_keys_configured: dict[str, bool]
     vector_store_status: str
     document_count: int
     timestamp: str
 
 
 class EvaluationRequest(BaseModel):
-    questions: List[str]
-    answers: List[str]
-    contexts: List[str]
+    questions: list[str]
+    answers: list[str]
+    contexts: list[str]
 
 
 class EvaluationResponse(BaseModel):
-    overall_scores: Dict[str, float]
-    summary: Dict[str, Any]
+    overall_scores: dict[str, float]
+    summary: dict[str, Any]
     success: bool
     timestamp: str
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
-@app.get("/", response_model=Dict[str, str])
+@app.get("/", response_model=dict[str, str])
 async def root():
     return {
         "message": "Welcome to IntelliDoc AI - Enterprise RAG API",
@@ -169,7 +170,7 @@ async def upload_document(
             detail=f"Unsupported file type. Allowed: {allowed_extensions}",
         )
 
-    tmp_file_path: Optional[str] = None
+    tmp_file_path: str | None = None
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp_file:
             content = await file.read()
